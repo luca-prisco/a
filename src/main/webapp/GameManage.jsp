@@ -19,6 +19,16 @@
 </head>
 <body>
 <jsp:include page="header.jsp" />
+	<%
+        String error = (String) request.getAttribute("error");
+        if (error != null) {
+    %>
+        <script type="text/javascript">
+            alert("<%= error %>");
+        </script>
+    <%
+        }
+    %>
 
 <%	if(user==null) response.sendError(response.SC_UNAUTHORIZED, "Sessione scaduta!");
 	else 

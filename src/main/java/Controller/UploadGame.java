@@ -2,12 +2,15 @@ package Controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -21,6 +24,7 @@ import javax.servlet.http.Part;
 import model.ProductModel;
 import model.game;
 
+
 /**
  * Servlet implementation class AddGame
  */
@@ -28,12 +32,27 @@ import model.game;
 @MultipartConfig()
 public class UploadGame extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-	static String SAVE_DIR = "img";
+	private static final String SAVE_DIR = "img";
 	static ProductModel GameModels = new ProductModelDM();
 	
 	DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	LocalDateTime now = LocalDateTime.now();
 	
+	 private static final Set<String> ALLOWED_EXTENSIONS = new HashSet<>();
+	    private static final Set<String> ALLOWED_CONTENT_TYPES = new HashSet<>();
+	    
+	    static {
+	        // Set di estensioni consentite
+	        ALLOWED_EXTENSIONS.add("jpg");
+	        ALLOWED_EXTENSIONS.add("jpeg");
+	        ALLOWED_EXTENSIONS.add("png");
+	        ALLOWED_EXTENSIONS.add("gif");
+	        
+	        // Set di content types consentiti
+	        ALLOWED_CONTENT_TYPES.add("image/jpeg");
+	        ALLOWED_CONTENT_TYPES.add("image/png");
+	        ALLOWED_CONTENT_TYPES.add("image/gif");
+	    }
 	
     public UploadGame() {
         super();
@@ -72,13 +91,24 @@ public class UploadGame extends HttpServlet {
 				fileName = extractFileName(part);
 			
 				if (fileName != null && !fileName.equals("")) {
-					part.write(savePath + File.separator + fileName);
-					g1.setImg(fileName);
-					
-					message = message + fileName + "\n";
-				} else {
-					request.setAttribute("error", "Errore: Bisogna selezionare almeno un file");
-				}
+	                String fileExtension = getFileExtension(fileName);
+	                String contentType = part.getContentType();
+					// Validazione dell'estensione e del contenuto consentito
+	                if (isAllowedExtension(fileExtension) && isAllowedContentType(contentType)) {
+                        File fileSaveDir = new File(savePath);
+                        if (!fileSaveDir.exists()) {
+                            fileSaveDir.mkdir();
+                        }
+                        
+                        part.write(savePath + File.separator + fileName);
+                        g1.setImg(fileName);
+                        message = message + fileName + "\n";
+                    } else {
+                        request.setAttribute("error", "Errore: Formato del file non consentito");
+                    }
+                } else {
+                    request.setAttribute("error", "Errore: Bisogna selezionare almeno un file");
+                }
 			}
 		}
 		
@@ -105,6 +135,8 @@ public class UploadGame extends HttpServlet {
 		RequestDispatcher dispatcher = getServletContext().getRequestDispatcher("/gameList?page=admin&sort=added DESC");
 		dispatcher.forward(request, response);
 	}
+	
+	
 	private String extractFileName(Part part) {
 		// content-disposition: form-data; name="file"; filename="file.txt"
 		String contentDisp = part.getHeader("content-disposition");
@@ -116,6 +148,35 @@ public class UploadGame extends HttpServlet {
 		}
 		return "";
 	}
+
 	
+	// Metodo ausiliario per controllare se un array di byte inizia con un altro array di byte
+	private boolean startsWith(byte[] array, byte[] prefix) {
+	    if (prefix.length > array.length) {
+	        return false;
+	    }
+	    for (int i = 0; i < prefix.length; i++) {
+	        if (array[i] != prefix[i]) {
+	            return false;
+	        }
+	    }
+	    return true;
+	}
+	
+    private String getFileExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf(".");
+        if (dotIndex > 0 && dotIndex < fileName.length() - 1) {
+            return fileName.substring(dotIndex + 1).toLowerCase();
+        }
+        return "";
+    }
+	
+    private boolean isAllowedExtension(String extension) {
+        return ALLOWED_EXTENSIONS.contains(extension);
+    }
+    
+    private boolean isAllowedContentType(String contentType) {
+        return ALLOWED_CONTENT_TYPES.contains(contentType);
+    }
 
 }

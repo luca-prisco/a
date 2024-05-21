@@ -60,7 +60,8 @@ else{
 	<input type="reset" name="reset" value="Reset" class="button1" >
 </form>
 	<br>
-<%@ include file="html/footer.html" %>		
 	
+<%@ include file="html/footer.html" %>		
+
 </body>
 </html>
